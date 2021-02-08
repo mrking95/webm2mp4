@@ -25,7 +25,7 @@ namespace webm2mp4
 
             Log.Information($"Logging to: {Path.Combine(Directory.GetCurrentDirectory(), $"{DateTime.Now.ToString("s").Split("T")[0]}.log")}");
 
-            return await Convert(new DirectoryInfo(input.Trim()), new DirectoryInfo(output ?? input), clean, force);
+            return await Convert(new DirectoryInfo(input.Trim()), output != null ? new DirectoryInfo(output) : null, clean, force);
         }
 
         static async Task<int> Convert(DirectoryInfo inputDir, DirectoryInfo outputDir, bool deleteOriginal, bool overwrite)
@@ -39,8 +39,9 @@ namespace webm2mp4
                 var index = 1;
                 foreach(var file in files) 
                 {
-                    var outputFile = new FileInfo($"{outputDir.FullName}/{Path.GetFileNameWithoutExtension(file.Name)}.mp4");
-                    Log.Information($"Converting ({index}/{files.Count}) {file.Name} to {outputFile.Name}");
+                    var outputPath = outputDir != null ? outputDir : file.Directory;
+                    var outputFile = new FileInfo($"{outputPath}/{Path.GetFileNameWithoutExtension(file.Name)}.mp4");
+                    Log.Information($"Converting ({index}/{files.Count}) {file.FullName} to {outputFile.FullName}");
                     var conversionResult = await converter.Convert(file, outputFile, overwrite);
 
                     if(conversionResult && deleteOriginal) {
