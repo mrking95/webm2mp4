@@ -9,10 +9,10 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net5.0/Test.dll",
-            "args": ["--input Z:\\Others\\media\\4chan\\gif"],
+            "program": "${workspaceFolder}/bin/Debug/net5.0/webm2mp4.dll",
+            "args": ["--input Z:\\Others\\media\\4chan\\gif\\18971907\\", "--force", "--clean"],
             "cwd": "${workspaceFolder}",
-            "console": "externalTerminal",
+            "console": "internalConsole",
             "stopAtEntry": false
         },
         {

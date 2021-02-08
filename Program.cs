@@ -1,121 +1,56 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Xabe.FFmpeg;
+using System.CommandLine.DragonFruit;
+using Serilog;
 
 namespace webm2mp4
 {
     class Program
     {
-        private static string inputPath;
-        private static string outputPath;
-        private static Boolean disableRemove = false;
-
-        static void Main(string[] args)
+        /// <summary>
+        /// Converts webm file or directory containing multiple webm's to mp4
+        /// </summary>
+        /// <param name="input">The path to the .webm or directorty containing multiple webm's for conversion</param>
+        /// <param name="output">The path for the files to be outputted (defaults to the input directory)</param>
+        /// <param name="force">Overwrite if the target file exists</param>
+        /// <param name="clean">Remove the original webm when conversion is complete</param>
+        /// <param name="log">If specified, output will be written to log</param>
+        static async Task<int> Main(string input, string output = null, bool force = true, bool clean = true, string log = null)
         {
-            if (args.Length == 0)
-            {
-                AskQuestions();
-            }
-            else
-            {
-                foreach (var arg in args)
-                {
-                    Console.WriteLine(arg);
-                    switch (arg.Split(' ')[0])
-                    {
-                        case "--input":
-                            inputPath = arg.Split(' ')[1];
-                            break;
+            Log.Logger = new LoggerConfiguration()
+                        .WriteTo.ColoredConsole()
+                        .WriteTo.File(log ?? Path.Combine(Directory.GetCurrentDirectory(), $"{DateTime.Now.ToString("s")}.log"))
+                        .CreateLogger();
 
-                        case "--output":
-                            outputPath = arg.Split(' ')[1];
-                            break;
-
-                        case "--disableRemove":
-                            disableRemove = true;
-                            break;
-                    }
-
-                    if (string.IsNullOrEmpty(outputPath))
-                    {
-                        outputPath = inputPath;
-                    }
-
-                }
-            }
-
-            Console.Clear();
-            Converter().GetAwaiter().GetResult();
-
-            
-            Console.SetCursorPosition(0, 10);
-
-            Console.WriteLine("Done!");
-            Console.ReadLine();
+            return await Convert(new DirectoryInfo(input.Trim()), new DirectoryInfo(output ?? input), clean, force);
         }
 
-        private static async Task Converter()
+        static async Task<int> Convert(DirectoryInfo inputDir, DirectoryInfo outputDir, bool deleteOriginal, bool overwrite)
         {
-            var files = GetFiles(inputPath);
-            Console.WriteLine($"Converting {files.Length} webm's to mp4...");
-            int i = 0, failureIndex = 0;
-            foreach (var file in files)
+            try 
             {
-                try
-                {
-                    i++;
-                    var fileName = Path.GetFileName(file);
-                    var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
-                    var outputFile = Path.Combine(GetOutputPath(file), fileNameWithoutExt + ".mp4"); ;
-                    Console.SetCursorPosition(0, 2);
-                    Console.Write($"Converting ({i}/{files.Length})... {fileName} to {outputFile}");
-                    var snippet = FFmpeg.Conversions.FromSnippet.Convert(file, outputFile);
-                    var awaiter = snippet.GetAwaiter();
-                    var c = awaiter.GetResult();
-                    await c.Start();
+                WebmConverter converter = new WebmConverter(inputDir);
 
-                    if (!disableRemove)
-                    {
-                        Console.SetCursorPosition(0, 2);
-                        Console.Write($"Deleting ({i}/{files.Length})... {fileName}");
-                        File.Delete(file);
+                var files = await converter.GetFiles();
+                Log.Information($"Got {files.Count} files for conversion");
+
+                foreach(var file in files) 
+                {
+                    Log.Information($"Converting {file.Name}");
+                    var conversionResult = await converter.Convert(file, new FileInfo($"{outputDir.FullName}/{Path.GetFileNameWithoutExtension(file.Name)}.mp4"), overwrite);
+
+                    if(conversionResult && deleteOriginal) {
+                        Log.Information($"Removing {file.Name}");
+                        file.Delete();
                     }
                 }
-                catch (Exception ex)
-                {
-                    failureIndex++;
-                    Console.SetCursorPosition(0, 12);
-                    Console.WriteLine($"Something failed during conversion.. skipping ({failureIndex} failures) {ex.Message}");
-                }
+            } 
+            catch (Exception ex) 
+            {
+                return ex.HResult;
             }
-        }
-
-        private static string GetOutputPath(string fileName) {
-            var currPath = Path.GetDirectoryName(fileName);
-            if(outputPath != currPath)
-                return currPath;
-
-            return outputPath;
-        } 
-
-        static void AskQuestions()
-        {
-            Console.WriteLine("I haven't received any input parameters.");
-            Console.WriteLine("\n");
-            Console.WriteLine("Input path:");
-            inputPath = Console.ReadLine();
-
-            Console.WriteLine("Output path: (or click enter to use same as inputPath)");
-            var t = Console.ReadLine();
-            if (!string.IsNullOrEmpty(t))
-                outputPath = t;
-        }
-
-        static string[] GetFiles(string path)
-        {
-            var p = path.Replace("\\", Path.DirectorySeparatorChar.ToString());
-            return Directory.GetFiles(p, "*.webm", SearchOption.AllDirectories);
+            return 0;
         }
     }
 
