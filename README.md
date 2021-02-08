@@ -1,6 +1,8 @@
 # webm2mp4
 A .net core based wrapper for ffmpeg. Made for converting webm's to mp4's whilst retaining quality and sound. Support multi level directory scanning for .webm's.
 
+Feel free to use or fork - if you have any problems using this piece of code, create an issue (Or PR with the fix).
+
 # How to use
 Grab the latest release or compile the source (`dotnet restore && dotnet run -- args`).
 
