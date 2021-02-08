@@ -42,6 +42,7 @@ namespace webm2mp4
         {
             var snippet = await FFmpeg.Conversions.FromSnippet.Convert(originalFile.FullName, outputFile.FullName);
             snippet.SetOverwriteOutput(overwrite);
+            snippet.AddParameter(@"-vf scale=1280:-2");
 
             try
             {
@@ -55,50 +56,5 @@ namespace webm2mp4
                 return false;
             }
         }
-
-        // private static async Task Converter()
-        // {
-        //     var files = GetFiles(inputPath);
-        //     Console.WriteLine($"Converting {files.Length} webm's to mp4...");
-        //     int i = 0, failureIndex = 0;
-        //     foreach (var file in files)
-        //     {
-        //         try
-        //         {
-        //             i++;
-        //             var fileName = Path.GetFileName(file);
-        //             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
-        //             var outputFile = Path.Combine(GetOutputPath(file), fileNameWithoutExt + ".mp4"); ;
-        //             Console.SetCursorPosition(0, 2);
-        //             Console.Write($"Converting ({i}/{files.Length})... {fileName} to {outputFile}");
-        //             var snippet = FFmpeg.Conversions.FromSnippet.Convert(file, outputFile);
-        //             var awaiter = snippet.GetAwaiter();
-        //             var c = awaiter.GetResult();
-        //             await c.Start();
-
-        //             if (!disableRemove)
-        //             {
-        //                 Console.SetCursorPosition(0, 2);
-        //                 Console.Write($"Deleting ({i}/{files.Length})... {fileName}");
-        //                 File.Delete(file);
-        //             }
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             failureIndex++;
-        //             Console.SetCursorPosition(0, 12);
-        //             Console.WriteLine($"Something failed during conversion.. skipping ({failureIndex} failures) {ex.Message}");
-        //         }
-        //     }
-        // }
-
-        // private static string GetOutputPath(string fileName)
-        // {
-        //     var currPath = Path.GetDirectoryName(fileName);
-        //     if (outputPath != currPath)
-        //         return currPath;
-
-        //     return outputPath;
-        // }    }
     }
 }

@@ -20,8 +20,10 @@ namespace webm2mp4
         {
             Log.Logger = new LoggerConfiguration()
                         .WriteTo.ColoredConsole()
-                        .WriteTo.File(log ?? Path.Combine(Directory.GetCurrentDirectory(), $"{DateTime.Now.ToString("s")}.log"))
+                        .WriteTo.File(log ?? Path.Combine(Directory.GetCurrentDirectory(), $"{DateTime.Now.ToString("s").Split("T")[0]}.log"))
                         .CreateLogger();
+
+            Log.Information($"Logging to: {Path.Combine(Directory.GetCurrentDirectory(), $"{DateTime.Now.ToString("s").Split("T")[0]}.log")}");
 
             return await Convert(new DirectoryInfo(input.Trim()), new DirectoryInfo(output ?? input), clean, force);
         }
@@ -34,16 +36,18 @@ namespace webm2mp4
 
                 var files = await converter.GetFiles();
                 Log.Information($"Got {files.Count} files for conversion");
-
+                var index = 1;
                 foreach(var file in files) 
                 {
-                    Log.Information($"Converting {file.Name}");
-                    var conversionResult = await converter.Convert(file, new FileInfo($"{outputDir.FullName}/{Path.GetFileNameWithoutExtension(file.Name)}.mp4"), overwrite);
+                    var outputFile = new FileInfo($"{outputDir.FullName}/{Path.GetFileNameWithoutExtension(file.Name)}.mp4");
+                    Log.Information($"Converting ({index}/{files.Count}) {file.Name} to {outputFile.Name}");
+                    var conversionResult = await converter.Convert(file, outputFile, overwrite);
 
                     if(conversionResult && deleteOriginal) {
                         Log.Information($"Removing {file.Name}");
                         file.Delete();
                     }
+                    index++;
                 }
             } 
             catch (Exception ex) 
